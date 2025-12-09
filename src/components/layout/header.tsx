@@ -44,8 +44,8 @@ export function Header({ className, fixed, showSidebarTrigger = true, children, 
       >
         {showSidebarTrigger && (
           <>
-            <SidebarTrigger variant='outline' className='max-md:scale-125' />
-            <Separator orientation='vertical' className='h-6' />
+        <SidebarTrigger variant='outline' className='max-md:scale-125' />
+        <Separator orientation='vertical' className='h-6' />
           </>
         )}
         {children}

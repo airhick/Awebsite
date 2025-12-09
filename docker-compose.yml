@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  aurora-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aurora-dashboard
+    ports:
+      - "80:80"
+    environment:
+      # These will be set by Coolify from the environment variables
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_VAPI_API_KEY=${VITE_VAPI_API_KEY}
+      - VITE_SUPABASE_EDGE_FUNCTION_NAME=${VITE_SUPABASE_EDGE_FUNCTION_NAME}
+    restart: unless-stopped
+    networks:
+      - aurora-network
+
+networks:
+  aurora-network:
+    driver: bridge
+

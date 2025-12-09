@@ -1,21 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useCustomerSync } from '@/hooks/use-customer-sync'
+import { useWebhookListener } from '@/hooks/use-webhook-listener'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { LanguageSelector } from '@/components/language-selector'
+import { WebhookPopup } from '@/components/webhook-popup'
+import { PlanBadge } from '@/components/plan-badge'
 import { StatsCards } from './components/stats-cards'
-import { AICapabilities } from './components/ai-capabilities'
-import { TestInterface } from './components/test-interface'
-import { RecentActivity } from './components/recent-activity'
 import { BusinessSetup } from './components/business-setup'
-import { ToolsTriggered } from './components/tools-triggered'
-import { CallDetails } from './components/call-details'
-import { AssistantConfig } from './components/assistant-config'
 import { Card, CardContent } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
+
+// Lazy load heavy components to improve initial page load
+const CallDetails = lazy(() => import('./components/call-details').then(m => ({ default: m.CallDetails })))
+const AssistantConfig = lazy(() => import('./components/assistant-config').then(m => ({ default: m.AssistantConfig })))
+const CallLogs = lazy(() => import('./components/call-logs').then(m => ({ default: m.CallLogs })))
+const RecentActivity = lazy(() => import('./components/recent-activity').then(m => ({ default: m.RecentActivity })))
 
 export function AuroraDashboard() {
   const { user, loading } = useAuthStore((state) => state.auth)
@@ -23,6 +28,9 @@ export function AuroraDashboard() {
   
   // Sync user to customers table
   useCustomerSync()
+  
+  // Listen for webhook events in real-time
+  useWebhookListener()
 
   useEffect(() => {
     // Show setup/login screen if user is not authenticated
@@ -56,6 +64,8 @@ export function AuroraDashboard() {
         <Header showSidebarTrigger={false}>
           <TopNav links={topNav} />
           <div className="ms-auto flex items-center space-x-4">
+            <PlanBadge />
+            <LanguageSelector />
             <ThemeSwitch />
             <ProfileDropdown />
           </div>
@@ -73,10 +83,15 @@ export function AuroraDashboard() {
         <TopNav links={topNav} />
         <div className="ms-auto flex items-center space-x-4">
           <Search />
+          <PlanBadge />
+          <LanguageSelector />
           <ThemeSwitch />
           <ProfileDropdown />
         </div>
       </Header>
+
+      {/* Webhook Popup - Shows when a webhook event is received */}
+      <WebhookPopup />
 
       <Main>
         <div className="space-y-6">
@@ -95,23 +110,27 @@ export function AuroraDashboard() {
           {/* Stats Cards */}
           <StatsCards />
 
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <AICapabilities />
-            <TestInterface />
+          {/* VAPI Information Grid - Lazy loaded */}
+          <div className="grid gap-6 lg:grid-cols-1">
+            <Suspense fallback={<Card><CardContent className="pt-6"><div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></CardContent></Card>}>
+              <CallDetails />
+            </Suspense>
           </div>
 
-          {/* VAPI Information Grid */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ToolsTriggered />
-            <CallDetails />
-          </div>
+          {/* Assistant Configuration - Lazy loaded */}
+          <Suspense fallback={<Card><CardContent className="pt-6"><div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></CardContent></Card>}>
+            <AssistantConfig />
+          </Suspense>
 
-          {/* Assistant Configuration */}
-          <AssistantConfig />
+          {/* Call Logs - Lazy loaded */}
+          <Suspense fallback={<Card><CardContent className="pt-6"><div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></CardContent></Card>}>
+            <CallLogs />
+          </Suspense>
 
-          {/* Recent Activity */}
-          <RecentActivity onStartTest={handleStartTest} />
+          {/* Recent Activity - Lazy loaded */}
+          <Suspense fallback={<Card><CardContent className="pt-6"><div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></CardContent></Card>}>
+            <RecentActivity onStartTest={handleStartTest} />
+          </Suspense>
 
           {/* Info Cards */}
           <div className="grid gap-6 lg:grid-cols-2">
@@ -162,18 +181,6 @@ const topNav = [
     href: '/',
     isActive: true,
     disabled: false,
-  },
-  {
-    title: 'Analytics',
-    href: '/analytics',
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Settings',
-    href: '/settings',
-    isActive: false,
-    disabled: true,
   },
 ]
 

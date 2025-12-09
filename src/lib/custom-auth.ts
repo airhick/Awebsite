@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase'
+import { setAuthCookie, clearAuthCookie, getAuthCookie, type AuthCookie } from './cookies'
 
 export interface Customer {
   id: number
@@ -127,6 +128,7 @@ async function authenticateDirectQuery(email: string, password: string): Promise
 /**
  * Create a mock session for customer
  * Since we're authenticating against customers table, we create a session-like object
+ * Also persists authentication in cookies
  */
 export async function createAuthUserForCustomer(customer: Customer) {
   try {
@@ -142,12 +144,19 @@ export async function createAuthUserForCustomer(customer: Customer) {
     // Store customer in localStorage as fallback
     localStorage.setItem('aurora_customer', JSON.stringify(customer))
     
+    // Set authentication cookie for persistence
+    setAuthCookie({
+      customerId: customer.id,
+      email: customer.email || '',
+      company: customer.company,
+    })
+    
     // Create a minimal session-like object
     const mockSession = {
       user: mockUser,
       access_token: 'customer-auth',
       refresh_token: '',
-      expires_at: Date.now() + 3600000, // 1 hour
+      expires_at: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
     }
 
     return { session: mockSession as any, error: null }
@@ -155,5 +164,68 @@ export async function createAuthUserForCustomer(customer: Customer) {
     console.error('Create auth user error:', error)
     return { session: null, error: error.message || 'Failed to create session' }
   }
+}
+
+/**
+ * Restore session from cookie
+ * Used on page refresh to restore authentication state
+ */
+export async function restoreSessionFromCookie(): Promise<{
+  session: any | null
+  error: string | null
+}> {
+  try {
+    const cookie = getAuthCookie()
+    
+    if (!cookie) {
+      return { session: null, error: null }
+    }
+    
+    // Check if cookie is expired
+    if (cookie.expiresAt < Date.now()) {
+      clearAuthCookie()
+      return { session: null, error: null }
+    }
+    
+    // Create user object from cookie data
+    const mockUser = {
+      id: cookie.customerId.toString(),
+      email: cookie.email,
+      user_metadata: {
+        company: cookie.company,
+      },
+    }
+    
+    // Also update localStorage
+    const customer: Customer = {
+      id: cookie.customerId,
+      email: cookie.email,
+      company: cookie.company,
+      created_at: new Date().toISOString(),
+    }
+    localStorage.setItem('aurora_customer', JSON.stringify(customer))
+    
+    // Create session-like object
+    const mockSession = {
+      user: mockUser,
+      access_token: 'customer-auth',
+      refresh_token: '',
+      expires_at: cookie.expiresAt,
+    }
+    
+    return { session: mockSession as any, error: null }
+  } catch (error: any) {
+    console.error('Error restoring session from cookie:', error)
+    clearAuthCookie()
+    return { session: null, error: error.message || 'Failed to restore session' }
+  }
+}
+
+/**
+ * Clear customer authentication (logout)
+ */
+export function clearCustomerAuth() {
+  clearAuthCookie()
+  localStorage.removeItem('aurora_customer')
 }
 

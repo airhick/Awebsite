@@ -1,6 +1,6 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Loader2 } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -15,6 +15,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuAction,
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Badge } from '../ui/badge'
@@ -32,6 +33,9 @@ import {
   type NavLink,
   type NavGroup as NavGroupProps,
 } from './types'
+import { callEdgeFunction } from '@/lib/edge-function'
+import { useAuthStore } from '@/stores/auth-store'
+import { toast } from 'sonner'
 
 export function NavGroup({ title, items }: NavGroupProps) {
   const { state, isMobile } = useSidebar()
@@ -64,6 +68,69 @@ function NavBadge({ children }: { children: ReactNode }) {
 
 function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
   const { setOpenMobile } = useSidebar()
+  const { user } = useAuthStore((state) => state.auth)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // Check if this is the Dashboard item
+  const isDashboard = item.url === '/dashboard'
+  
+  const handleEdgeFunction = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!user) {
+      toast.error('Please log in to use this feature')
+      return
+    }
+    
+    // Get customer ID from user metadata or localStorage
+    const customerData = localStorage.getItem('aurora_customer')
+    let customerId: number | null = null
+    
+    if (customerData) {
+      try {
+        const customer = JSON.parse(customerData)
+        customerId = customer.id
+      } catch (error) {
+        console.error('Failed to parse customer data:', error)
+      }
+    }
+    
+    // Fallback to user ID if no customer data
+    if (!customerId && user.id) {
+      customerId = parseInt(user.id, 10)
+    }
+    
+    if (!customerId) {
+      toast.error('Unable to identify customer ID')
+      return
+    }
+    
+    setIsLoading(true)
+    
+    try {
+      const eventBody = {
+        action: 'dashboard_access',
+        timestamp: new Date().toISOString(),
+        user_id: user.id,
+        email: user.email,
+      }
+      
+      const result = await callEdgeFunction(customerId, eventBody)
+      
+      if (result.success) {
+        toast.success(result.message || 'Event logged successfully')
+      } else {
+        toast.error(result.error || 'Failed to log event')
+      }
+    } catch (error: any) {
+      console.error('Edge function error:', error)
+      toast.error(error.message || 'Failed to call edge function')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -77,6 +144,20 @@ function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
           {item.badge && <NavBadge>{item.badge}</NavBadge>}
         </Link>
       </SidebarMenuButton>
+      {isDashboard && (
+        <SidebarMenuAction
+          onClick={handleEdgeFunction}
+          disabled={isLoading}
+          showOnHover
+          aria-label="Trigger edge function"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </SidebarMenuAction>
+      )}
     </SidebarMenuItem>
   )
 }

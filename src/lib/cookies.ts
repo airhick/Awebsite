@@ -1,43 +1,163 @@
 /**
- * Cookie utility functions using manual document.cookie approach
- * Replaces js-cookie dependency for better consistency
+ * Cookie utilities for authentication persistence and general cookie management
  */
 
-const DEFAULT_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
+const COOKIE_NAME = 'aurora_auth_session'
+const COOKIE_MAX_AGE = 30 * 24 * 60 * 60 // 30 days in seconds
+
+/**
+ * Generic cookie utilities
+ */
 
 /**
  * Get a cookie value by name
  */
-export function getCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined
-
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) {
-    const cookieValue = parts.pop()?.split(';').shift()
-    return cookieValue
+export function getCookie(name: string): string | null {
+  try {
+    const cookies = document.cookie.split(';')
+    const cookie = cookies.find(c => c.trim().startsWith(`${name}=`))
+    
+    if (!cookie) {
+      return null
+    }
+    
+    const value = cookie.split('=')[1]
+    return decodeURIComponent(value)
+  } catch (error) {
+    console.error(`Error reading cookie ${name}:`, error)
+    return null
   }
-  return undefined
 }
 
 /**
- * Set a cookie with name, value, and optional max age
+ * Set a cookie
  */
 export function setCookie(
   name: string,
   value: string,
-  maxAge: number = DEFAULT_MAX_AGE
-): void {
-  if (typeof document === 'undefined') return
-
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}`
+  maxAge?: number,
+  options?: {
+    path?: string
+    domain?: string
+    secure?: boolean
+    sameSite?: 'Strict' | 'Lax' | 'None'
+  }
+) {
+  try {
+    const encodedValue = encodeURIComponent(value)
+    let cookieString = `${name}=${encodedValue}`
+    
+    if (maxAge) {
+      const expires = new Date(Date.now() + maxAge * 1000).toUTCString()
+      cookieString += `; expires=${expires}`
+    }
+    
+    cookieString += `; path=${options?.path || '/'}`
+    
+    if (options?.domain) {
+      cookieString += `; domain=${options.domain}`
+    }
+    
+    if (options?.secure !== false && (options?.secure || window.location.protocol === 'https:')) {
+      cookieString += `; Secure`
+    }
+    
+    cookieString += `; SameSite=${options?.sameSite || 'Lax'}`
+    
+    document.cookie = cookieString
+  } catch (error) {
+    console.error(`Error setting cookie ${name}:`, error)
+  }
 }
 
 /**
- * Remove a cookie by setting its max age to 0
+ * Remove a cookie
  */
-export function removeCookie(name: string): void {
-  if (typeof document === 'undefined') return
+export function removeCookie(
+  name: string,
+  options?: {
+    path?: string
+    domain?: string
+  }
+) {
+  try {
+    let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC`
+    cookieString += `; path=${options?.path || '/'}`
+    
+    if (options?.domain) {
+      cookieString += `; domain=${options.domain}`
+}
 
-  document.cookie = `${name}=; path=/; max-age=0`
+    document.cookie = cookieString
+  } catch (error) {
+    console.error(`Error removing cookie ${name}:`, error)
+  }
+}
+
+export interface AuthCookie {
+  customerId: number
+  email: string
+  company: string | null
+  expiresAt: number
+}
+
+/**
+ * Set authentication cookie
+ */
+export function setAuthCookie(data: Omit<AuthCookie, 'expiresAt'>) {
+  const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days from now
+  const cookieData: AuthCookie = {
+    ...data,
+    expiresAt,
+  }
+  
+  const cookieValue = encodeURIComponent(JSON.stringify(cookieData))
+  const expires = new Date(expiresAt).toUTCString()
+  
+  // Set cookie with secure flags
+  document.cookie = `${COOKIE_NAME}=${cookieValue}; expires=${expires}; path=/; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`
+}
+
+/**
+ * Get authentication cookie
+ */
+export function getAuthCookie(): AuthCookie | null {
+  try {
+    const cookies = document.cookie.split(';')
+    const authCookie = cookies.find(cookie => cookie.trim().startsWith(`${COOKIE_NAME}=`))
+    
+    if (!authCookie) {
+      return null
+    }
+    
+    const cookieValue = authCookie.split('=')[1]
+    const decoded = decodeURIComponent(cookieValue)
+    const data: AuthCookie = JSON.parse(decoded)
+    
+    // Check if cookie is expired
+    if (data.expiresAt && data.expiresAt < Date.now()) {
+      clearAuthCookie()
+      return null
+    }
+    
+    return data
+  } catch (error) {
+    console.error('Error reading auth cookie:', error)
+    return null
+  }
+}
+
+/**
+ * Clear authentication cookie
+ */
+export function clearAuthCookie() {
+  document.cookie = `${COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+}
+
+/**
+ * Check if user is authenticated via cookie
+ */
+export function isAuthenticatedViaCookie(): boolean {
+  const cookie = getAuthCookie()
+  return cookie !== null && cookie.expiresAt > Date.now()
 }

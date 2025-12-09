@@ -1,0 +1,32 @@
+# Coolify configuration file
+# This file helps Coolify understand how to build and deploy your application
+
+build:
+  # Build command (optional, Coolify will detect Dockerfile)
+  command: npm run build
+  
+  # Build context
+  context: .
+  
+  # Dockerfile path
+  dockerfile: Dockerfile
+
+# Port configuration
+ports:
+  - "80:80"
+
+# Health check
+healthcheck:
+  path: /
+  interval: 30
+  timeout: 10
+  retries: 3
+
+# Environment variables (set these in Coolify UI)
+# Required:
+# - VITE_SUPABASE_URL
+# - VITE_SUPABASE_ANON_KEY
+# - VITE_VAPI_API_KEY
+# Optional:
+# - VITE_SUPABASE_EDGE_FUNCTION_NAME
+

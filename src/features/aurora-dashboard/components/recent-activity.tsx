@@ -38,7 +38,7 @@ export function RecentActivity({ onStartTest }: RecentActivityProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>📊 Recent Activity</CardTitle>
+        <CardTitle>📊 Recent Activity</CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -56,11 +56,11 @@ export function RecentActivity({ onStartTest }: RecentActivityProps) {
             <p className="mt-4 text-sm text-muted-foreground">Loading calls...</p>
           </div>
         ) : filteredCalls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <h3 className="mt-4 text-lg font-medium">No calls yet</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <h3 className="mt-4 text-lg font-medium">No calls yet</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
               {searchQuery ? 'No calls match your search' : 'Start your first call to see activity here'}
-            </p>
+          </p>
             {!searchQuery && <Button onClick={onStartTest}>Start Test Call</Button>}
           </div>
         ) : (
@@ -116,7 +116,7 @@ export function RecentActivity({ onStartTest }: RecentActivityProps) {
                 </div>
               ))}
             </div>
-          </div>
+        </div>
         )}
       </CardContent>
     </Card>

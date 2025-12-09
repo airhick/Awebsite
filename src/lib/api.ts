@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { useAuthStore } from '@/stores/auth-store'
 
 /**
  * Crawl a website and extract markdown content
@@ -32,9 +33,25 @@ export async function createCustomer(data: {
   title?: string
 }): Promise<any> {
   try {
+    // Check for Supabase Auth session
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      throw new Error('Not authenticated')
+    
+    // Also check for custom auth session (from cookies/localStorage)
+    const authState = useAuthStore.getState().auth
+    const hasCustomSession = authState.user && authState.session
+    
+    // If no session at all, skip (don't throw error for custom auth users)
+    if (!session && !hasCustomSession) {
+      // For custom auth, the customer already exists in the database
+      // We don't need to create/update it via this function
+      console.log('No Supabase Auth session found. Skipping customer sync (custom auth users already have customer records).')
+      return null
+    }
+    
+    // For custom auth users, skip this sync as they already have customer records
+    if (hasCustomSession && !session) {
+      console.log('Custom auth session detected. Skipping customer sync (customer record already exists).')
+      return null
     }
 
     // Check if customer exists

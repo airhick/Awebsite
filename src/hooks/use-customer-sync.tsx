@@ -1,18 +1,30 @@
 import { useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { createCustomer } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 
 /**
  * Hook to sync authenticated user with the customers table
+ * Only syncs for Supabase Auth users, not custom auth users
  */
 export function useCustomerSync() {
-  const { user } = useAuthStore((state) => state.auth)
+  const { user, session } = useAuthStore((state) => state.auth)
 
   useEffect(() => {
     if (!user) return
 
     const syncCustomer = async () => {
       try {
+        // Check if this is a custom auth session (not Supabase Auth)
+        const { data: { session: supabaseSession } } = await supabase.auth.getSession()
+        
+        // If no Supabase session but we have a user, it's custom auth
+        // Custom auth users already have customer records, so skip sync
+        if (!supabaseSession && session) {
+          console.log('Custom auth session detected. Skipping customer sync.')
+          return
+        }
+
         const userEmail = user.email
         const userMetadata = user.user_metadata || {}
 
@@ -31,7 +43,7 @@ export function useCustomerSync() {
           (fullName ? fullName.split(' ').slice(1).join(' ') : null) ||
           null
 
-        await createCustomer({
+        const result = await createCustomer({
           email: userEmail,
           first_name: firstName || undefined,
           last_name: lastName || undefined,
@@ -39,13 +51,18 @@ export function useCustomerSync() {
           title: (userMetadata as any).title || undefined,
         })
 
+        if (result) {
         console.log('Customer record synced successfully')
+        }
       } catch (error) {
+        // Only log errors that aren't "skipped" messages
+        if (error instanceof Error && !error.message.includes('Skipping')) {
         console.error('Failed to sync customer record:', error)
+        }
       }
     }
 
     syncCustomer()
-  }, [user])
+  }, [user, session])
 }
 

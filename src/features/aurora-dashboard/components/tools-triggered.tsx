@@ -37,7 +37,12 @@ export function ToolsTriggered() {
     latestCall: allToolCalls.filter(t => t.name === name).sort((a, b) => 
       (b.callTime || '').localeCompare(a.callTime || '')
     )[0],
-  })).sort((a, b) => b.count - a.count)
+  })).sort((a, b) => {
+    // Sort by latest call time (most recent first)
+    const aTime = a.latestCall?.callTime || ''
+    const bTime = b.latestCall?.callTime || ''
+    return bTime.localeCompare(aTime)
+  })
 
   return (
     <>

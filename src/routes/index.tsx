@@ -12,9 +12,9 @@ function LandingPage() {
   const { user, loading, signInWithGoogle } = useAuthStore((state) => state.auth)
 
   useEffect(() => {
-    // Redirect authenticated users to dashboard
-    if (!loading && user) {
-      navigate({ to: '/dashboard' })
+      // Redirect authenticated users to dashboard
+      if (!loading && user) {
+        navigate({ to: '/dashboard' })
     }
   }, [user, loading, navigate])
 
@@ -33,9 +33,9 @@ function LandingPage() {
 
   // Show loading state while checking authentication
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg">Loading...</div>
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-lg">Loading...</div>
       </div>
     )
   }

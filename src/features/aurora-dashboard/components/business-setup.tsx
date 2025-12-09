@@ -75,42 +75,17 @@ export function BusinessSetup({ onComplete }: BusinessSetupProps) {
           throw new Error(authError || 'Invalid email or password')
         }
 
-        // Create Supabase Auth session for the authenticated customer
+        // Create session for the authenticated customer (this also sets the cookie)
         const { session, error: sessionError } = await createAuthUserForCustomer(customer)
 
         if (sessionError || !session) {
-          // If we can't create Supabase Auth session, we'll still allow login
-          // by creating a mock session with customer data
-          console.warn('Could not create Supabase Auth session, using customer data:', sessionError)
-          
-          // Create a mock user object from customer data
-          const mockUser = {
-            id: customer.id.toString(),
-            email: customer.email || '',
-            user_metadata: {
-              company: customer.company,
-            },
-          }
+          throw new Error(sessionError || 'Failed to create session')
+      }
 
-          // Store customer in localStorage as fallback
-          localStorage.setItem('aurora_customer', JSON.stringify(customer))
-          
-          // Create a minimal session-like object
-          const mockSession = {
-            user: mockUser,
-            access_token: 'customer-auth',
-            refresh_token: '',
-            expires_at: Date.now() + 3600000, // 1 hour
-          }
-
-          setSession(mockSession as any)
-          toast.success('Welcome back!')
-          onComplete()
-        } else {
-          setSession(session)
-          toast.success('Welcome back!')
-          onComplete()
-        }
+        // Set the session (cookie is already set by createAuthUserForCustomer)
+        setSession(session)
+        toast.success('Welcome back!')
+        onComplete()
       }
     } catch (error: any) {
       console.error('Auth error:', error)
@@ -159,16 +134,16 @@ export function BusinessSetup({ onComplete }: BusinessSetupProps) {
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                <Input
+              <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  required
+                required
                   disabled={isLoading}
                   className="pl-10"
-                />
+              />
               </div>
             </div>
 

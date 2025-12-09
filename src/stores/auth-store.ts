@@ -8,6 +8,7 @@ import {
   signOut as authSignOut,
   verifyOrCreateCustomerRecord,
 } from '@/lib/auth'
+import { restoreSessionFromCookie, clearCustomerAuth } from '@/lib/custom-auth'
 
 type AuthUser = User
 
@@ -86,15 +87,27 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     },
     signOut: async () => {
       await authSignOut()
+      clearCustomerAuth() // Clear cookies and localStorage
       get().auth.reset()
     },
-    reset: () =>
+    reset: () => {
+      clearCustomerAuth() // Clear cookies and localStorage
       set((state) => ({
         ...state,
         auth: { ...state.auth, user: null, session: null },
-      })),
+      }))
+    },
     initialize: async () => {
       try {
+        // First, try to restore session from cookie (for custom auth)
+        const { session: cookieSession } = await restoreSessionFromCookie()
+        if (cookieSession) {
+          console.log('Restored session from cookie')
+          get().auth.setSession(cookieSession)
+          get().auth.setLoading(false)
+          return
+        }
+        
         // Check if Supabase is enabled
         if (!isSupabaseEnabled) {
           console.warn('Supabase is not configured. Skipping auth initialization.')
@@ -102,7 +115,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           return
         }
 
-        // Get initial session
+        // Get initial session from Supabase
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) {
           // Don't throw on network errors, just log them
@@ -119,7 +132,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         // Verify customer record exists for authenticated user
         if (session?.user) {
           try {
-            await verifyOrCreateCustomerRecord(session.user)
+          await verifyOrCreateCustomerRecord(session.user)
           } catch (err) {
             console.warn('Failed to verify customer record:', err)
           }
@@ -132,7 +145,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           // Verify customer record when user signs in
           if (session?.user) {
             try {
-              await verifyOrCreateCustomerRecord(session.user)
+            await verifyOrCreateCustomerRecord(session.user)
             } catch (err) {
               console.warn('Failed to verify customer record:', err)
             }
