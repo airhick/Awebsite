@@ -15,15 +15,60 @@ Set the following environment variables in Coolify (in the "Environment Variable
 
 ### Required Variables
 
-- `VITE_SUPABASE_URL`: Your Supabase project URL (e.g., `https://xxxxx.supabase.co`)
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
-- `VITE_VAPI_API_KEY`: Your VAPI API key (global for all dashboards)
+These variables **MUST** be set for the application to work:
+
+1. **`VITE_SUPABASE_URL`**
+   - **Description**: Your Supabase project URL
+   - **Example**: `https://oknakvgnwxlkvhwmocno.supabase.co`
+   - **Where to find**: Supabase Dashboard → Settings → API → Project URL
+   - **Format**: Must start with `https://` and end with `.supabase.co`
+
+2. **`VITE_SUPABASE_ANON_KEY`**
+   - **Description**: Your Supabase anonymous/public key (NOT the service role key)
+   - **Example**: `sb_publishable_BcC5d3MA2VslQJHRoXdy1Q_yvwEEgp2`
+   - **Where to find**: Supabase Dashboard → Settings → API → Project API keys → `anon` `public` key
+   - **Important**: Use the `anon` or `publishable` key, never the `service_role` key
+
+3. **`VITE_VAPI_API_KEY`**
+   - **Description**: Your VAPI API key (global for all dashboards)
+   - **Example**: `9d09c2ec-4223-41af-a1c9-8bb097b8e5ef`
+   - **Where to find**: VAPI Dashboard → Settings → API Keys
+   - **Note**: This key is shared across all customer dashboards
 
 ### Optional Variables
 
-- `VITE_SUPABASE_EDGE_FUNCTION_NAME`: Name of your Supabase Edge Function (if using)
+These variables are optional but may be needed depending on your setup:
 
-**Important**: These variables must be set as **Build Arguments** in Coolify, as they are needed during the build process (Vite embeds them at build time).
+4. **`VITE_SUPABASE_EDGE_FUNCTION_NAME`**
+   - **Description**: Name of your Supabase Edge Function for webhook processing
+   - **Default**: `n8n-webhook`
+   - **Example**: `n8n-webhook`
+   - **When to use**: If you've deployed a custom edge function name different from the default
+
+5. **`VITE_SUPABASE_DEFAULT_COMPANY_ID`**
+   - **Description**: Default company ID for new customers (optional)
+   - **Example**: `1`
+   - **When to use**: Only if you need a default company ID for customer creation
+
+### How to Set Variables in Coolify
+
+1. **Go to your application** in Coolify
+2. **Navigate to "Environment Variables"** section
+3. **Add each variable** with its name and value
+4. **Important**: Make sure these are available during **build time** (not just runtime)
+   - In Coolify, environment variables are typically available during build
+   - If using Dockerfile, they will be passed as build arguments automatically
+
+### Example Configuration in Coolify
+
+```
+VITE_SUPABASE_URL=https://oknakvgnwxlkvhwmocno.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_BcC5d3MA2VslQJHRoXdy1Q_yvwEEgp2
+VITE_VAPI_API_KEY=9d09c2ec-4223-41af-a1c9-8bb097b8e5ef
+VITE_SUPABASE_EDGE_FUNCTION_NAME=n8n-webhook
+```
+
+**Critical Note**: These variables must be set as **Build Arguments** or **Environment Variables** that are available during the build process, as Vite embeds them at build time (not runtime). After changing these variables, you **must rebuild** the container.
 
 ## Deployment Steps
 
@@ -32,7 +77,12 @@ Set the following environment variables in Coolify (in the "Environment Variable
 1. Go to your Coolify dashboard
 2. Click "New Resource" → "Application"
 3. Connect your Git repository (GitHub, GitLab, etc.)
-4. Select the branch you want to deploy (usually `main` or `master`)
+4. **Important**: Use **HTTPS URL** instead of SSH URL
+   - ✅ **Correct**: `https://github.com/aurora-ch/dashboard`
+   - ❌ **Wrong**: `git@github.com:aurora-ch/dashboard`
+5. Select the branch you want to deploy (usually `main` or `master`)
+
+**Note**: If you get a "Permission denied (publickey)" error, it means you're using SSH. Switch to HTTPS URL instead.
 
 ### Step 2: Configure Build Settings
 
@@ -93,6 +143,23 @@ After deployment, ensure:
    - Verify dashboard loads correctly
 
 ## Troubleshooting
+
+### "Permission denied (publickey)" or "Could not read from remote repository"
+
+**Error**: 
+```
+Error: git@github.com: Permission denied (publickey).
+fatal: Could not read from remote repository.
+```
+
+**Solution**: 
+- **Use HTTPS URL instead of SSH URL** in Coolify
+- Change from: `git@github.com:aurora-ch/dashboard`
+- Change to: `https://github.com/aurora-ch/dashboard`
+- If the repository is private, you'll need to:
+  1. Go to Coolify → Sources
+  2. Add your GitHub/GitLab credentials
+  3. Or use a Deploy Key (SSH) if you prefer SSH
 
 ### Build fails with "VITE_* is not defined"
 
