@@ -124,13 +124,33 @@ export async function fetchVAPICalls(
           })
 
           if (!response.ok) {
+            // Handle rate limiting and CORS errors gracefully
+            if (response.status === 429) {
+              // Rate limit - stop fetching for this assistant
+              if (import.meta.env.DEV) {
+                console.warn(`Rate limit (429) reached for assistant ${assistantId}. Stopping fetch.`)
+              }
+              hasMore = false
+              break
+            }
+            
+            // CORS errors are expected in browser - don't log as error
+            if (response.status === 0 || response.type === 'opaque') {
+              // CORS blocked - this is expected in browser
+              hasMore = false
+              break
+            }
+            
             const errorText = await response.text().catch(() => 'Unable to read error response')
+            // Only log non-rate-limit errors in dev mode
+            if (import.meta.env.DEV && response.status !== 429) {
             console.error(`Failed to fetch calls for assistant ${assistantId}:`, {
               status: response.status,
               statusText: response.statusText,
               error: errorText,
               url: `${VAPI_BASE_URL}/call?${params.toString()}`
             })
+            }
             hasMore = false
             break
           }
@@ -188,8 +208,20 @@ export async function fetchVAPICalls(
               hasMore = false
             }
           }
-        } catch (error) {
+        } catch (error: any) {
+          // Handle CORS and network errors silently (expected in browser)
+          if (error?.message?.includes('Failed to fetch') || 
+              error?.message?.includes('CORS') ||
+              error?.name === 'TypeError') {
+            // CORS/network error - expected in browser, don't log
+            hasMore = false
+            break
+          }
+          
+          // Only log unexpected errors in dev mode
+          if (import.meta.env.DEV) {
           console.error(`Error fetching calls for assistant ${assistantId}:`, error)
+          }
           hasMore = false
         }
       }

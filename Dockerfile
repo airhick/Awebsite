@@ -13,13 +13,14 @@ RUN npm ci --only=production=false
 # Copy source code
 COPY . .
 
-# Build arguments for environment variables
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_VAPI_API_KEY
-ARG VITE_SUPABASE_EDGE_FUNCTION_NAME
+# Build arguments for environment variables (with defaults for local testing)
+ARG VITE_SUPABASE_URL=""
+ARG VITE_SUPABASE_ANON_KEY=""
+ARG VITE_VAPI_API_KEY=""
+ARG VITE_SUPABASE_EDGE_FUNCTION_NAME=""
 
 # Set environment variables for build
+# These are required at build time for Vite to embed them in the bundle
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 ENV VITE_VAPI_API_KEY=$VITE_VAPI_API_KEY

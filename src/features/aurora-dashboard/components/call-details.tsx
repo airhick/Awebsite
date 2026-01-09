@@ -3,7 +3,7 @@ import { useVAPICalls } from '@/hooks/use-vapi-calls'
 import { fetchVAPICallDetail } from '@/lib/vapi'
 import { Badge } from '@/components/ui/badge'
 import { PhoneIncoming, MessageSquare, RefreshCw, Eye, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useTranslation } from '@/lib/translations'
 import {
@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SatisfactionGauge } from '@/components/ui/satisfaction-gauge'
+import { calculateSatisfactionScore } from '@/lib/satisfaction-score'
 
 interface CallSummary {
   callId: string
@@ -35,6 +37,15 @@ export function CallDetails() {
 
   // Get incoming calls (up to 10)
   const incomingCalls = calls.filter(call => call.type === 'inboundPhoneCall').slice(0, 10)
+  
+  // Calculate satisfaction scores for each call
+  const satisfactionScores = useMemo(() => {
+    const scores: Record<string, number> = {}
+    incomingCalls.forEach(call => {
+      scores[call.id] = calculateSatisfactionScore(call)
+    })
+    return scores
+  }, [incomingCalls])
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return '-'
@@ -44,6 +55,33 @@ export function CallDetails() {
       hour: '2-digit',
       minute: '2-digit',
     })
+  }
+
+  // Helper function to extract transcript text safely
+  const extractTranscriptText = (call: any): string => {
+    let transcriptText = ''
+    
+    // Handle transcript
+    if (call.transcript) {
+      if (Array.isArray(call.transcript)) {
+        transcriptText = call.transcript.map((msg: any) => msg.content || msg.text || '').join(' ')
+      } else if (typeof call.transcript === 'string') {
+        transcriptText = call.transcript
+      } else if (call.transcript.content) {
+        transcriptText = call.transcript.content
+      }
+    }
+    
+    // Handle messages if transcript is empty
+    if (!transcriptText && call.messages) {
+      if (Array.isArray(call.messages)) {
+        transcriptText = call.messages.map((msg: any) => msg.content || msg.text || '').join(' ')
+      } else if (typeof call.messages === 'string') {
+        transcriptText = call.messages
+      }
+    }
+    
+    return transcriptText.trim()
   }
 
   const loadCallDetail = async (callId: string) => {
@@ -149,6 +187,8 @@ export function CallDetails() {
                 const summary = expandedSummaries[call.id]
                 const isExpanded = !!summary
 
+                const satisfactionScore = satisfactionScores[call.id] ?? 50
+                
                 return (
                   <div key={call.id} className="border rounded-lg overflow-hidden">
                     <div className="flex items-center justify-between p-3 hover:bg-accent transition-colors">
@@ -165,6 +205,15 @@ export function CallDetails() {
                             {formatTime(call.startedAt || call.createdAt)} {call.status === 'ended' ? t.calls.ended : ''}
                       </div>
                     </div>
+                    {/* Satisfaction Gauge */}
+                    <SatisfactionGauge 
+                      score={satisfactionScore} 
+                      size={50}
+                      className="mx-2"
+                      transcript={extractTranscriptText(call)}
+                      summary={call.analysis?.summary}
+                      interactive={true}
+                    />
                     <Badge variant={call.status === 'ended' ? 'default' : 'destructive'}>
                       {call.status}
                     </Badge>
@@ -249,6 +298,22 @@ export function CallDetails() {
                 <div>
                   <h4 className="font-semibold mb-1">Cost</h4>
                   <p className="text-sm">${selectedCall.cost?.toFixed(4) || '0.0000'}</p>
+                </div>
+                <div className="col-span-2">
+                  <h4 className="font-semibold mb-2">Customer Satisfaction</h4>
+                  <div className="flex items-center gap-4">
+                    <SatisfactionGauge 
+                      score={calculateSatisfactionScore(selectedCall)} 
+                      size={80}
+                      showLabel={true}
+                      transcript={extractTranscriptText(selectedCall)}
+                      summary={selectedCall.analysis?.summary}
+                      interactive={true}
+                    />
+                    <div className="text-sm text-muted-foreground">
+                      Score calculated from transcript analysis. Click for detailed AI analysis.
+                    </div>
+                  </div>
                 </div>
               </div>
 

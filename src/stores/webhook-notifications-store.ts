@@ -8,19 +8,18 @@ export interface WebhookNotification {
   payload: any
   created_at: string
   call_id?: string | null
+  call_type?: string | null
 }
 
 interface WebhookNotificationsState {
   notifications: WebhookNotification[]
-  currentNotification: WebhookNotification | null
   addNotification: (notification: WebhookNotification) => void
-  clearCurrentNotification: () => void
+  removeNotification: (notificationId: number) => void
   clearAllNotifications: () => void
 }
 
 export const useWebhookNotificationsStore = create<WebhookNotificationsState>()((set) => ({
   notifications: [],
-  currentNotification: null,
   addNotification: (notification) => {
     // Verify that the notification belongs to the current customer
     const currentCustomerId = getCustomerId()
@@ -38,20 +37,28 @@ export const useWebhookNotificationsStore = create<WebhookNotificationsState>()(
       return
     }
 
-    // Only add notifications that match the current customer
-    set((state) => ({
-      notifications: [notification, ...state.notifications],
-      currentNotification: notification, // Set as current to show popup
-    }))
+    // Check if notification already exists (avoid duplicates)
+    set((state) => {
+      const exists = state.notifications.some(n => n.id === notification.id)
+      if (exists) {
+        console.log('Notification already exists, skipping:', notification.id)
+        return state
+      }
+
+      // Add new notification to the beginning of the array (most recent first)
+      // But we'll display them in reverse order (oldest at top, newest at bottom)
+      return {
+        notifications: [...state.notifications, notification], // Add to end so newest appears at bottom
+      }
+    })
   },
-  clearCurrentNotification: () =>
-    set(() => ({
-      currentNotification: null,
+  removeNotification: (notificationId) =>
+    set((state) => ({
+      notifications: state.notifications.filter(n => n.id !== notificationId),
     })),
   clearAllNotifications: () =>
     set(() => ({
       notifications: [],
-      currentNotification: null,
     })),
 }))
 

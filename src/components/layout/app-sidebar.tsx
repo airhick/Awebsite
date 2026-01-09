@@ -15,11 +15,18 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader>
-        {/* Sidebar header content removed */}
+        <div className="logo" style={{ fontSize: 0, lineHeight: 0 }}>
+          <img 
+            src="/logos/aurora-logo.png" 
+            alt="Aurora Logo" 
+            className="h-7 object-contain"
+            style={{ width: 'auto', display: 'block' }}
+          />
+        </div>
       </SidebarHeader>
       <SidebarContent>
-        {sidebarData.navGroups.map((props) => (
-          <NavGroup key={props.title} {...props} />
+        {sidebarData.navGroups.map((props, index) => (
+          <NavGroup key={props.title || `nav-group-${index}`} {...props} />
         ))}
       </SidebarContent>
       <SidebarFooter>

@@ -1,32 +1,37 @@
-# Coolify configuration file
+# Coolify configuration file for Aurora Dashboard
 # This file helps Coolify understand how to build and deploy your application
 
+# Build configuration
 build:
-  # Build command (optional, Coolify will detect Dockerfile)
-  command: npm run build
-  
-  # Build context
+  # Build context (directory where Dockerfile is located)
   context: .
   
   # Dockerfile path
   dockerfile: Dockerfile
 
 # Port configuration
+# The application runs on port 80 inside the container
 ports:
   - "80:80"
 
-# Health check
+# Health check configuration
 healthcheck:
   path: /
   interval: 30
   timeout: 10
   retries: 3
 
-# Environment variables (set these in Coolify UI)
-# Required:
-# - VITE_SUPABASE_URL
-# - VITE_SUPABASE_ANON_KEY
-# - VITE_VAPI_API_KEY
-# Optional:
-# - VITE_SUPABASE_EDGE_FUNCTION_NAME
+# Environment variables required in Coolify UI:
+# 
+# REQUIRED (must be set before deployment):
+# - VITE_SUPABASE_URL: Your Supabase project URL
+# - VITE_SUPABASE_ANON_KEY: Your Supabase anonymous key
+# - VITE_VAPI_API_KEY: Your VAPI API key
+#
+# OPTIONAL:
+# - VITE_SUPABASE_EDGE_FUNCTION_NAME: Name of your Supabase edge function (if used)
+#
+# Note: These variables are used at BUILD TIME and embedded in the JavaScript bundle.
+# Coolify will automatically pass environment variables as build arguments to Docker.
+# Make sure to set them in Coolify UI under "Environment Variables" BEFORE building.
 

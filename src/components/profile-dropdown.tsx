@@ -31,7 +31,12 @@ export function ProfileDropdown() {
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative h-8 w-8 rounded-full"
+            aria-label="User menu"
+          >
             <Avatar className='h-8 w-8'>
               <AvatarImage src={avatarUrl} alt={userName} />
               <AvatarFallback>{initials}</AvatarFallback>

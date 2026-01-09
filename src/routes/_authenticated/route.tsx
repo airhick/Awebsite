@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_authenticated')({
     const currentUser = useAuthStore.getState().auth.user
     if (!currentUser) {
       throw redirect({
-        to: '/',
+        to: '/login',
         search: {
           redirect: window.location.pathname,
         },

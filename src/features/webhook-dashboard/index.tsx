@@ -1,37 +1,20 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { PlanBadge } from '@/components/plan-badge'
+import { LanguageSelector } from '@/components/language-selector'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Phone, Clock, MessageSquare, Loader2 } from 'lucide-react'
-import { getCustomerAgents } from '@/lib/customer-agents'
 import { getCustomerId } from '@/lib/vapi-api-key'
 import { ScrollArea } from '@/components/ui/scroll-area'
-
-interface CallLog {
-  id: number
-  vapi_call_id: string
-  customer_id: number | null
-  status: string | null
-  type: string | null
-  started_at: string | null
-  created_at: string | null
-  duration: number | null
-  cost: number | null
-  customer_number: string | null
-  ended_reason: string | null
-  summary: string | null
-  recording_url: string | null
-  transcript: any
-  messages: any
-  assistant_id: string | null
-  artifact: any
-}
+import { SatisfactionGauge } from '@/components/ui/satisfaction-gauge'
+import { calculateSatisfactionScoreFromCallLog } from '@/lib/satisfaction-score'
+import type { CallLog } from '@/lib/call-logs-sync'
 
 const topNav = [
   { title: 'Dashboard', href: '/dashboard', isActive: false },
@@ -49,7 +32,7 @@ export function WebhookDashboard() {
     customerIdRef.current = customerId
   }, [])
 
-  // Load previous calls based on customer's agent IDs
+  // Load previous calls from call_logs table filtered by customer_id
   useEffect(() => {
     const loadCalls = async () => {
       const customerId = customerIdRef.current
@@ -59,31 +42,20 @@ export function WebhookDashboard() {
       }
 
       try {
-        // Get agent IDs for this customer
-        const agentIds = await getCustomerAgents(customerId)
-        console.log('[WebhookDashboard] Agent IDs:', agentIds)
-
-        if (agentIds.length === 0) {
-          console.warn('[WebhookDashboard] No agent IDs found for customer')
-          setCalls([])
-          setIsLoading(false)
-          return
-        }
-
-        // Fetch call logs where assistant_id matches any of the agent IDs
+        // Fetch call logs directly by customer_id (using foreign key relationship)
         const { data, error } = await supabase
           .from('call_logs')
           .select('*')
-          .in('assistant_id', agentIds)
+          .eq('customer_id', customerId)
           .order('started_at', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false })
+          .order('created_at_db', { ascending: false })
           .limit(100)
 
         if (error) {
           console.error('[WebhookDashboard] Error loading calls:', error)
           setCalls([])
         } else {
-          console.log(`[WebhookDashboard] Loaded ${data?.length || 0} calls`)
+          console.log(`[WebhookDashboard] Loaded ${data?.length || 0} calls for customer ${customerId}`)
           setCalls(data || [])
         }
       } catch (error) {
@@ -142,12 +114,22 @@ export function WebhookDashboard() {
     return JSON.stringify(transcript)
   }
 
+  // Calculate satisfaction scores for all calls
+  const satisfactionScores = useMemo(() => {
+    const scores: Record<number, number> = {}
+    calls.forEach(call => {
+      scores[call.id] = calculateSatisfactionScoreFromCallLog(call)
+    })
+    return scores
+  }, [calls])
+
   return (
     <>
       <Header>
         <TopNav links={topNav} />
         <div className="ms-auto flex items-center space-x-4">
-          <Search />
+          <PlanBadge />
+          <LanguageSelector />
           <ThemeSwitch />
           <ProfileDropdown />
         </div>
@@ -204,7 +186,7 @@ export function WebhookDashboard() {
                     const transcript = extractTranscript(call.transcript)
                     const summary = call.summary || 'No summary available'
                     const duration = formatDuration(call.duration)
-                    const dateTime = formatDateTime(call.started_at || call.created_at)
+                    const dateTime = formatDateTime(call.started_at || call.created_at_db)
                     
                     return (
                       <Card key={call.id} className="overflow-hidden">
@@ -220,9 +202,16 @@ export function WebhookDashboard() {
                                     {call.assistant_id.substring(0, 8)}...
                                   </Badge>
                                 )}
-                                {call.customer_number && (
-                                  <span className="text-sm font-medium">{call.customer_number}</span>
-                                )}
+                                {/* Satisfaction Gauge */}
+                                <div className="ml-auto">
+                                  <SatisfactionGauge 
+                                    score={satisfactionScores[call.id] ?? 50} 
+                                    size={50}
+                                    transcript={transcript}
+                                    summary={call.summary || undefined}
+                                    interactive={true}
+                                  />
+                                </div>
                               </div>
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">

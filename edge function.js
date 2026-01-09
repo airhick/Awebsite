@@ -25,14 +25,65 @@ serve(async (req) => {
       throw new Error("Format de payload invalide : Un tableau est attendu.")
     }
 
-    const dataItem = payload[0]
+    // Handle different payload structures from n8n
+    // Structure 1: Direct transfer request [{ "valeur": "...", "type": "...", "call_id": "...", "body": "..." }]
+    // Structure 2: HTTP response objects [{ "body": {...}, "headers": {...}, "statusCode": 200 }]
+    let dataItem = payload[0]
+    let rawId = null
+    let eventBody = null
+    let callId = null
+    let callType = null
+
+    // Check if this is an HTTP response object (has statusCode, headers, body with nested response)
+    if (dataItem.statusCode && dataItem.headers && dataItem.body) {
+      // This is an HTTP response - the actual data might be in the body or we need to look elsewhere
+      // Try to find the original request data in the response body or in previous items
+      console.log('Received HTTP response object, looking for original request data...')
+      
+      // The original data might be in a different format or we need to extract from context
+      // For now, log and try to extract what we can
+      if (dataItem.body && typeof dataItem.body === 'object') {
+        // Check if body contains the original request
+        if (dataItem.body.valeur) {
+          rawId = dataItem.body.valeur
+          eventBody = dataItem.body.body
+          callId = dataItem.body.call_id
+          callType = dataItem.body.type
+        }
+      }
+      
+      // If we still don't have the data, it means n8n sent the wrong structure
+      // We'll need to handle this case or return an error
+      if (!rawId) {
+        console.error('HTTP response structure detected but original request data not found')
+        console.error('Payload structure:', JSON.stringify(payload, null, 2))
+        throw new Error("Format de payload invalide : Les données de la requête originale (valeur, type, call_id) sont manquantes dans la réponse HTTP.")
+      }
+    } else {
+      // Normal structure: direct transfer request data
+      dataItem = payload[0]
+      rawId = dataItem.valeur
+      eventBody = dataItem.body
+      
+      // Try multiple possible field names for call_id
+      callId = dataItem.call_id || 
+               dataItem.callId || 
+               dataItem.callID || 
+               dataItem['call_id'] ||
+               dataItem.vapi_call_id ||
+               dataItem.vapiCallId ||
+               null
+      
+      // Extract call type from the original n8n payload
+      callType = dataItem.type || 
+                  dataItem.call_type || 
+                  dataItem.callType || 
+                  null
+    }
     
-    // 3. Extraction de l'ID cible ('valeur' = '1')
-    // ATTENTION : Ta table customers utilise un 'bigint', donc on s'assure que c'est propre
-    const rawId = dataItem.valeur
-    
+    // 3. Extraction de l'ID cible ('valeur' = customer ID)
     if (!rawId) {
-      throw new Error("Champ 'valeur' (ID client) manquant.")
+      throw new Error("Champ 'valeur' (ID client) manquant dans le payload.")
     }
 
     // Conversion en entier pour matcher le type 'bigint' de PostgreSQL
@@ -41,46 +92,46 @@ serve(async (req) => {
     if (isNaN(targetCustomerId)) {
       throw new Error(`L'ID fourni (${rawId}) n'est pas un nombre valide pour l'ID customer.`)
     }
-
-    // 4. Préparation de la donnée
-    const eventBody = dataItem.body
-
-    // Try multiple possible field names for call_id
-    const callId = dataItem.call_id || 
-                   dataItem.callId || 
-                   dataItem.callID || 
-                   dataItem['call_id'] ||
-                   dataItem.vapi_call_id ||
-                   dataItem.vapiCallId ||
-                   null
     
     // Debug: log the received data in detail
     console.log('=== EDGE FUNCTION DEBUG ===')
     console.log('Full payload received:', JSON.stringify(payload, null, 2))
-    console.log('DataItem keys:', Object.keys(dataItem))
-    console.log('DataItem values:', JSON.stringify(dataItem, null, 2))
-    console.log('Looking for call_id in:', {
-      'call_id': dataItem.call_id,
-      'callId': dataItem.callId,
-      'callID': dataItem.callID,
-      'vapi_call_id': dataItem.vapi_call_id,
-      'vapiCallId': dataItem.vapiCallId
+    console.log('First item keys:', Object.keys(payload[0]))
+    console.log('Extracted values:', {
+      rawId,
+      targetCustomerId,
+      callId,
+      callType,
+      eventBodyType: typeof eventBody,
+      hasEventBody: !!eventBody
     })
-    console.log('Extracted call_id:', callId)
-    console.log('Extracted customer_id:', targetCustomerId)
-    console.log('Event body type:', typeof eventBody)
+    
+    // Warn if we're receiving HTTP response objects instead of original request data
+    if (payload[0].statusCode || payload[0].headers) {
+      console.warn('⚠️ WARNING: Received HTTP response object instead of original transfer request data!')
+      console.warn('n8n should send the original transfer request structure: [{ "valeur": "...", "type": "...", "call_id": "...", "body": "..." }]')
+      console.warn('Current payload structure appears to be HTTP response objects.')
+    }
 
     // 5. Insertion dans la table de liaison 'user_events'
-    // On mappe 'valeur' -> 'customer_id' et 'call_id' -> 'call_id'
+    // Store the full original payload structure to preserve type and other fields
+    // This allows the dashboard to extract call_type when sending back to n8n
+    const fullPayload = {
+      body: eventBody,
+      type: callType,
+      call_id: callId,
+      // Include any other fields from the original payload
+      ...(dataItem.valeur && { valeur: dataItem.valeur }),
+    }
+    
     const insertData = {
           customer_id: targetCustomerId, // Lien vers public.customers(id)
           event_type: 'n8n_tool_call',
-          payload: eventBody,
-          created_at: new Date().toISOString()
+          payload: fullPayload, // Store full structure including type
+          created_at: new Date().toISOString(),
+          call_id: callId || null, // Always include call_id, even if null
+          call_type: callType || null, // Store call_type separately for easy querying
         }
-    
-    // Always include call_id, even if null (so we can see it in the database)
-    insertData.call_id = callId || null
     
     console.log('Final insert data:', JSON.stringify(insertData, null, 2))
     

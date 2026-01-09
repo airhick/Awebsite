@@ -20,6 +20,52 @@ export function WebhookPopup() {
   const isOpen = !!currentNotification && 
                  currentNotification.customer_id === currentCustomerId
 
+  const extractCallType = (payload: any): string | null => {
+    try {
+      if (!payload) return null
+      
+      // If payload is a string, try to parse it
+      let parsedPayload = payload
+      if (typeof payload === 'string') {
+        try {
+          parsedPayload = JSON.parse(payload)
+        } catch {
+          return null
+        }
+      }
+      
+      // Handle n8n payload structure stored by edge function:
+      // Structure: { "body": "...", "type": "...", "call_id": "...", "valeur": "..." }
+      // The edge function now stores the full structure including type
+      if (parsedPayload?.type) {
+        return String(parsedPayload.type)
+      }
+      
+      // Handle original n8n payload structure: array with object containing type
+      // Structure: [{ "type": "...", "call_id": "...", "body": "...", "valeur": "..." }]
+      if (Array.isArray(parsedPayload) && parsedPayload.length > 0) {
+        const firstItem = parsedPayload[0]
+        if (firstItem?.type) {
+          return String(firstItem.type)
+        }
+      }
+      
+      // Try alternative field names
+      if (parsedPayload?.call_type) return String(parsedPayload.call_type)
+      if (parsedPayload?.callType) return String(parsedPayload.callType)
+      
+      // Check nested objects
+      if (parsedPayload?.message?.type) return String(parsedPayload.message.type)
+      if (parsedPayload?.artifact?.type) return String(parsedPayload.artifact.type)
+      if (parsedPayload?.data?.type) return String(parsedPayload.data.type)
+      
+      return null
+    } catch (e) {
+      console.error('Error extracting call type:', e)
+      return null
+    }
+  }
+
   const extractCallSummary = (payload: any): string => {
     try {
       // If payload is null or undefined, return default
@@ -108,56 +154,54 @@ export function WebhookPopup() {
     }
 
     const callId = currentNotification.call_id
-    const webhookBody = { call_id: callId }
+    const callSummary = extractCallSummary(currentNotification.payload)
+    // Try to get call_type from notification first (stored in DB), then fall back to extracting from payload
+    const callType = currentNotification.call_type || extractCallType(currentNotification.payload)
+    
+    // Prepare webhook body with useful parameters
+    const webhookBody = {
+      call_id: callId,
+      customer_id: currentNotification.customer_id,
+      event_type: currentNotification.event_type,
+      call_type: callType, // Include call type (from DB column or extracted from payload)
+      summary: callSummary,
+      created_at: currentNotification.created_at,
+      payload: currentNotification.payload, // Include full payload for flexibility
+    }
 
     try {
-      // Trigger both webhooks in parallel
-      const [response1, response2] = await Promise.allSettled([
+      // Send POST requests without waiting for response (fire and forget)
+      // Use fetch with keepalive to ensure request completes even if page unloads
         fetch('https://n8n.goreview.fr/webhook-test/pickup', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(webhookBody),
-        }),
+        keepalive: true, // Ensures request completes even if page closes
+      }).catch((error) => {
+        // Silently handle errors - we're not waiting for response anyway
+        console.warn('Webhook-test/pickup request failed (non-blocking):', error)
+      })
+
         fetch('https://n8n.goreview.fr/webhook/pickup', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(webhookBody),
-        }),
-      ])
+        keepalive: true, // Ensures request completes even if page closes
+      }).catch((error) => {
+        // Silently handle errors - we're not waiting for response anyway
+        console.warn('Webhook/pickup request failed (non-blocking):', error)
+      })
 
-      // Check results
-      const testSuccess = response1.status === 'fulfilled' && response1.value.ok
-      const prodSuccess = response2.status === 'fulfilled' && response2.value.ok
-
-      if (testSuccess && prodSuccess) {
+      // Show success immediately without waiting for response
         toast.success('Appel récupéré avec succès')
-        console.log('Both pickup webhooks triggered successfully for call:', callId)
-      } else if (testSuccess || prodSuccess) {
-        toast.warning('Un des webhooks a échoué, mais l\'appel a été récupéré')
-        console.warn('Partial success - one webhook failed')
-      } else {
-        toast.error('Erreur lors de la récupération de l\'appel')
-        console.error('Both webhooks failed')
-      }
-
-      // Log detailed results
-      if (response1.status === 'fulfilled') {
-        console.log('Webhook-test/pickup response:', response1.value.status, response1.value.statusText)
-      } else {
-        console.error('Webhook-test/pickup error:', response1.reason)
-      }
-
-      if (response2.status === 'fulfilled') {
-        console.log('Webhook/pickup response:', response2.value.status, response2.value.statusText)
-      } else {
-        console.error('Webhook/pickup error:', response2.reason)
-      }
+      console.log('Pickup webhooks sent (fire-and-forget) for call:', callId, 'with data:', webhookBody)
     } catch (error) {
-      console.error('Error triggering pickup webhooks:', error)
+      // Only catch errors during request setup, not response
+      console.error('Error setting up pickup webhooks:', error)
       toast.error('Erreur lors de l\'envoi des webhooks')
     }
   }

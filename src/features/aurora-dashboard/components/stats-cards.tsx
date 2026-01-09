@@ -1,16 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone, Zap, PhoneForwarded, Clock, RefreshCw } from 'lucide-react'
-import { useVAPICalls } from '@/hooks/use-vapi-calls'
-import { calculateStats } from '@/lib/vapi'
+import { Phone, Zap, PhoneForwarded, Clock } from 'lucide-react'
 import { useCustomerPlan } from '@/hooks/use-customer-plan'
 import { calculateStatsFromCallLogs } from '@/lib/stats-from-call-logs'
-import { getCustomerId, getVAPIApiKey } from '@/lib/vapi-api-key'
-import { syncCallLogs } from '@/lib/call-logs-sync'
+import { getCustomerId } from '@/lib/vapi-api-key'
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 import { useTranslation } from '@/lib/translations'
+import { supabase } from '@/lib/supabase'
 
 // Initialize stats from cache synchronously (before first render)
 function getInitialStatsFromCache() {
@@ -31,101 +27,50 @@ function getInitialStatsFromCache() {
 }
 
 export function StatsCards() {
-  const { calls, loading: vapiLoading } = useVAPICalls()
   const { plan } = useCustomerPlan()
   const t = useTranslation()
   // Initialize with cached stats immediately (synchronous, no loading state)
   const [stats, setStats] = useState(getInitialStatsFromCache)
-  const cachedStats = getInitialStatsFromCache()
-  const hasCachedData = cachedStats.totalCalls > 0 || cachedStats.totalMinutes > 0
-  const [loading, setLoading] = useState(!hasCachedData) // Show loading if no cache
-  const [syncing, setSyncing] = useState(false)
+  const [loading] = useState(false) // Don't show loading if we have cache
 
-  // Calculate stats directly from VAPI calls (primary source for minutes)
+  // Load fresh stats immediately in background (non-blocking)
   useEffect(() => {
-    if (!vapiLoading && calls.length > 0) {
-      // Calculate stats from VAPI calls - this includes accurate minutes calculation
-      const vapiStats = calculateStats(calls)
-      setStats(vapiStats)
-      setLoading(false)
-      
-      // Cache the VAPI stats
-      try {
-        localStorage.setItem('aurora_call_stats_cache', JSON.stringify({
-          stats: vapiStats,
-          timestamp: Date.now(),
-        }))
-      } catch {
-        // Ignore cache errors
-      }
-    } else if (!vapiLoading && calls.length === 0) {
-      // No calls loaded yet, try to load from DB as fallback
-    const loadStatsFromDB = async () => {
+    const loadFreshStats = async () => {
       const customerId = getCustomerId()
-        
-      if (!customerId) {
-          setLoading(false)
-        return
-      }
-
-        // Check cache first
-      const cached = getInitialStatsFromCache()
-      if (cached.totalCalls > 0 || cached.totalMinutes > 0) {
-          setStats(cached)
-          setLoading(false)
-        return
-      }
-
-        // No cache, try DB
+      if (!customerId) return
+      
       try {
+        // Fetch total calls from customers table
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('tot_calls')
+          .eq('id', customerId)
+          .maybeSingle()
+
+        if (customerError) {
+          // Only log non-404 errors (404 means customer doesn't exist, which is okay)
+          if (customerError.code !== 'PGRST116') {
+            console.error('Error fetching total calls from customers table:', customerError)
+          }
+        }
+
+        // Load other stats from DB (fast RPC call) - runs in parallel
         const dbStats = await calculateStatsFromCallLogs(customerId)
-        setStats(dbStats)
+        
+        // Override totalCalls with value from customers.tot_calls
+        setStats({
+          ...dbStats,
+          totalCalls: customerData?.tot_calls ?? dbStats.totalCalls ?? 0
+        })
       } catch (error) {
-        console.error('Error loading stats from DB:', error)
-          setStats({ totalCalls: 0, live: 0, transferred: 0, totalMinutes: 0 })
-      } finally {
-        setLoading(false)
+        // Ignore errors - we have cache as fallback
+        console.error('Error loading fresh stats:', error)
       }
     }
 
-    loadStatsFromDB()
-    }
-  }, [calls, vapiLoading])
-
-  // Manual sync function
-  const handleSync = async () => {
-    const customerId = getCustomerId()
-    const apiKey = getVAPIApiKey()
-    
-    if (!customerId || !apiKey) {
-      toast.error('Customer ID or API key not found')
-      return
-    }
-
-    setSyncing(true)
-    setLoading(true)
-    try {
-      toast.info('Syncing calls from VAPI... This may take a moment.')
-      
-      const result = await syncCallLogs(apiKey, customerId)
-      
-      if (result.new > 0) {
-        toast.success(`Synced ${result.new} new call${result.new > 1 ? 's' : ''} (${result.synced} total available)`)
-      } else if (result.synced > 0) {
-        toast.success(`All ${result.synced} call${result.synced > 1 ? 's' : ''} already synced.`)
-      } else {
-        toast.warning('No calls found to sync. Make sure you have calls in VAPI for your agents.')
-      }
-      
-      // After sync, stats will be updated automatically when VAPI calls refresh
-    } catch (error: any) {
-      console.error('Sync error:', error)
-      toast.error(`Failed to sync: ${error.message || 'Unknown error'}`)
-    } finally {
-      setSyncing(false)
-      setLoading(false)
-    }
-  }
+    // Start loading immediately, but don't block UI
+    loadFreshStats()
+  }, [])
 
   const planMinutes = plan
     ? {
@@ -156,35 +101,6 @@ export function StatsCards() {
 
   return (
     <div className="space-y-4">
-      {stats.totalCalls === 0 && !loading && (
-        <Card className="border-dashed">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-sm font-medium">{t.stats.noCallData}</p>
-              <p className="text-xs text-muted-foreground">
-                {t.stats.syncCallLogs}
-              </p>
-            </div>
-            <Button 
-              onClick={handleSync} 
-              disabled={syncing}
-              size="sm"
-            >
-              {syncing ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  {t.stats.syncing}
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  {t.stats.syncCalls}
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

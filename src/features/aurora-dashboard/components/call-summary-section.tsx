@@ -4,9 +4,33 @@ import { Badge } from '@/components/ui/badge'
 import { useCallSummaryStore } from '@/stores/call-summary-store'
 import { X, MessageSquare, Phone, Calendar, Loader2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { SatisfactionGauge } from '@/components/ui/satisfaction-gauge'
+import { useMemo } from 'react'
+import { calculateSatisfactionScoreFromCallLog } from '@/lib/satisfaction-score'
 
 export function CallSummarySection() {
   const { selectedCall, clearSelectedCall } = useCallSummaryStore()
+
+  // Calculate satisfaction score if we have transcript/summary data
+  const satisfactionScore = useMemo(() => {
+    if (!selectedCall) return 50
+    
+    // Try to extract transcript from selectedCall if available
+    // For now, we'll use a simple calculation based on summary
+    // In a real scenario, you'd pass the full call data
+    if (selectedCall.summary) {
+      // Create a mock CallLog structure for calculation
+      const mockCallLog = {
+        transcript: null,
+        messages: null,
+        summary: selectedCall.summary,
+        ended_reason: selectedCall.status === 'ended' ? 'completed' : null
+      }
+      return calculateSatisfactionScoreFromCallLog(mockCallLog)
+    }
+    
+    return 50 // Default score
+  }, [selectedCall])
 
   if (!selectedCall) {
     return null
@@ -52,6 +76,16 @@ export function CallSummarySection() {
                   {selectedCall.status}
                 </Badge>
               )}
+              {/* Satisfaction Gauge */}
+              <div className="ml-auto">
+                <SatisfactionGauge 
+                  score={satisfactionScore} 
+                  size={50}
+                  transcript={selectedCall.summary || undefined}
+                  summary={selectedCall.summary}
+                  interactive={true}
+                />
+              </div>
             </div>
 
             {/* Summary Content */}

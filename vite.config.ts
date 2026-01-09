@@ -19,4 +19,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['hls.js'],
+    exclude: ['motion', 'framer-motion', 'motion-dom'],
+  },
+  ssr: {
+    noExternal: ['motion', 'framer-motion', 'motion-dom'],
+  },
 })

@@ -80,6 +80,62 @@ export interface Translations {
     webhookError: string
   }
   
+  // Timeline Graph
+  timeline: {
+    title: string
+    noData: string
+    timeAxis: string
+    callsAxis: string
+    calls: string
+    toolCalls: string
+    handoffs: string
+    totalCalls: string
+  }
+  
+  // Call Manager
+  callManager: {
+    button: string
+    title: string
+    description: string
+    phoneLabel: string
+    phoneHint: string
+    callButton: string
+    calling: string
+    callStarted: string
+    callEnded: string
+    callStopped: string
+    connecting: string
+    stopCall: string
+    updatingContext: string
+    updateError: string
+    noApiKey: string
+    callError: string
+    startError: string
+    stopError: string
+  }
+  
+  // Help Center
+  helpCenter: {
+    pageTitle: string
+    pageDescription: string
+    title: string
+    description: string
+    yourInfo: string
+    customerId: string
+    email: string
+    company: string
+    notAvailable: string
+    messageLabel: string
+    messagePlaceholder: string
+    messageHint: string
+    messageRequired: string
+    sendButton: string
+    sending: string
+    messageSent: string
+    sendError: string
+    customerNotFound: string
+  }
+  
   // Common
   common: {
     selectLanguage: string
@@ -159,6 +215,56 @@ export const translations: Record<LanguageCode, Translations> = {
       callPickupError: 'Error picking up the call',
       webhookError: 'Error sending webhooks',
     },
+    timeline: {
+      title: 'Call Timeline',
+      noData: 'No call data available for timeline',
+      timeAxis: 'Time',
+      callsAxis: 'Calls',
+      calls: 'Calls',
+      toolCalls: 'Tool Calls',
+      handoffs: 'Handoffs',
+      totalCalls: 'Total Calls',
+    },
+    callManager: {
+      button: 'Call Manager',
+      title: 'Call Your Personal Call Manager',
+      description: 'Get instant answers about your previous calls. The call manager has access to all your call history and can answer questions about past conversations.',
+      phoneLabel: 'Your Phone Number',
+      phoneHint: 'Include country code (e.g., +1 for US)',
+      callButton: 'Call Now',
+      calling: 'Initiating...',
+      callStarted: 'Call started!',
+      callEnded: 'Call ended',
+      callStopped: 'Call stopped',
+      connecting: 'Connecting...',
+      stopCall: 'Stop Call',
+      updatingContext: 'Updating call manager with your call history...',
+      updateError: 'Failed to update assistant context',
+      noApiKey: 'VAPI API key not found',
+      callError: 'Call error occurred',
+      startError: 'Failed to start call',
+      stopError: 'Failed to stop call',
+    },
+    helpCenter: {
+      pageTitle: 'Help Center',
+      pageDescription: 'Get in touch with the Aurora team for support and assistance.',
+      title: 'Contact Aurora Team',
+      description: 'Send us a message and we\'ll get back to you as soon as possible.',
+      yourInfo: 'Your Information',
+      customerId: 'Customer ID',
+      email: 'Email',
+      company: 'Company',
+      notAvailable: 'N/A',
+      messageLabel: 'Your Message',
+      messagePlaceholder: 'Type your message here...',
+      messageHint: 'Please provide as much detail as possible to help us assist you better.',
+      messageRequired: 'Please enter a message',
+      sendButton: 'Send Message',
+      sending: 'Sending...',
+      messageSent: 'Your message has been sent successfully!',
+      sendError: 'Failed to send message. Please try again.',
+      customerNotFound: 'Customer information not found. Please log in again.',
+    },
     common: {
       selectLanguage: 'Select Language',
       loading: 'Loading...',
@@ -235,6 +341,56 @@ export const translations: Record<LanguageCode, Translations> = {
       callPickupError: 'Erreur lors de la récupération de l\'appel',
       webhookError: 'Erreur lors de l\'envoi des webhooks',
     },
+    timeline: {
+      title: 'Chronologie des appels',
+      noData: 'Aucune donnée d\'appel disponible pour la chronologie',
+      timeAxis: 'Heure',
+      callsAxis: 'Appels',
+      calls: 'Appels',
+      toolCalls: 'Appels d\'outils',
+      handoffs: 'Transferts',
+      totalCalls: 'Total des appels',
+    },
+    callManager: {
+      button: 'Gestionnaire d\'appels',
+      title: 'Appeler votre gestionnaire d\'appels personnel',
+      description: 'Obtenez des réponses instantanées sur vos appels précédents. Le gestionnaire d\'appels a accès à tout votre historique d\'appels et peut répondre aux questions sur les conversations passées.',
+      phoneLabel: 'Votre numéro de téléphone',
+      phoneHint: 'Inclure l\'indicatif pays (ex: +33 pour la France)',
+      callButton: 'Appeler maintenant',
+      calling: 'Initiation...',
+      callStarted: 'Appel démarré !',
+      callEnded: 'Appel terminé',
+      callStopped: 'Appel arrêté',
+      connecting: 'Connexion...',
+      stopCall: 'Arrêter l\'appel',
+      updatingContext: 'Mise à jour du gestionnaire d\'appels avec votre historique...',
+      updateError: 'Échec de la mise à jour du contexte de l\'assistant',
+      noApiKey: 'Clé API VAPI introuvable',
+      callError: 'Erreur d\'appel survenue',
+      startError: 'Échec du démarrage de l\'appel',
+      stopError: 'Échec de l\'arrêt de l\'appel',
+    },
+    helpCenter: {
+      pageTitle: 'Centre d\'aide',
+      pageDescription: 'Contactez l\'équipe Aurora pour obtenir de l\'aide et du support.',
+      title: 'Contacter l\'équipe Aurora',
+      description: 'Envoyez-nous un message et nous vous répondrons dans les plus brefs délais.',
+      yourInfo: 'Vos informations',
+      customerId: 'ID client',
+      email: 'Email',
+      company: 'Entreprise',
+      notAvailable: 'N/A',
+      messageLabel: 'Votre message',
+      messagePlaceholder: 'Tapez votre message ici...',
+      messageHint: 'Veuillez fournir autant de détails que possible pour nous aider à mieux vous assister.',
+      messageRequired: 'Veuillez entrer un message',
+      sendButton: 'Envoyer le message',
+      sending: 'Envoi...',
+      messageSent: 'Votre message a été envoyé avec succès !',
+      sendError: 'Échec de l\'envoi du message. Veuillez réessayer.',
+      customerNotFound: 'Informations client introuvables. Veuillez vous reconnecter.',
+    },
     common: {
       selectLanguage: 'Sélectionner la langue',
       loading: 'Chargement...',
@@ -310,6 +466,56 @@ export const translations: Record<LanguageCode, Translations> = {
       callPickedUpPartial: 'Ein Webhook ist fehlgeschlagen, aber der Anruf wurde angenommen',
       callPickupError: 'Fehler beim Annehmen des Anrufs',
       webhookError: 'Fehler beim Senden der Webhooks',
+    },
+    timeline: {
+      title: 'Anruf-Zeitachse',
+      noData: 'Keine Anrufdaten für die Zeitachse verfügbar',
+      timeAxis: 'Zeit',
+      callsAxis: 'Anrufe',
+      calls: 'Anrufe',
+      toolCalls: 'Tool-Aufrufe',
+      handoffs: 'Weiterleitungen',
+      totalCalls: 'Gesamtanzahl Anrufe',
+    },
+    callManager: {
+      button: 'Anruf-Manager',
+      title: 'Rufen Sie Ihren persönlichen Anruf-Manager an',
+      description: 'Erhalten Sie sofortige Antworten zu Ihren vorherigen Anrufen. Der Anruf-Manager hat Zugriff auf Ihre gesamte Anrufhistorie und kann Fragen zu vergangenen Gesprächen beantworten.',
+      phoneLabel: 'Ihre Telefonnummer',
+      phoneHint: 'Ländercode einschließen (z.B. +49 für Deutschland)',
+      callButton: 'Jetzt anrufen',
+      calling: 'Wird initiiert...',
+      callStarted: 'Anruf gestartet!',
+      callEnded: 'Anruf beendet',
+      callStopped: 'Anruf gestoppt',
+      connecting: 'Verbinden...',
+      stopCall: 'Anruf beenden',
+      updatingContext: 'Anruf-Manager wird mit Ihrem Anrufverlauf aktualisiert...',
+      updateError: 'Fehler beim Aktualisieren des Assistenten-Kontexts',
+      noApiKey: 'VAPI API-Schlüssel nicht gefunden',
+      callError: 'Anruf-Fehler aufgetreten',
+      startError: 'Fehler beim Starten des Anrufs',
+      stopError: 'Fehler beim Beenden des Anrufs',
+    },
+    helpCenter: {
+      pageTitle: 'Hilfezentrum',
+      pageDescription: 'Kontaktieren Sie das Aurora-Team für Support und Hilfe.',
+      title: 'Aurora-Team kontaktieren',
+      description: 'Senden Sie uns eine Nachricht und wir werden uns so schnell wie möglich bei Ihnen melden.',
+      yourInfo: 'Ihre Informationen',
+      customerId: 'Kunden-ID',
+      email: 'E-Mail',
+      company: 'Unternehmen',
+      notAvailable: 'N/V',
+      messageLabel: 'Ihre Nachricht',
+      messagePlaceholder: 'Geben Sie hier Ihre Nachricht ein...',
+      messageHint: 'Bitte geben Sie so viele Details wie möglich an, damit wir Ihnen besser helfen können.',
+      messageRequired: 'Bitte geben Sie eine Nachricht ein',
+      sendButton: 'Nachricht senden',
+      sending: 'Wird gesendet...',
+      messageSent: 'Ihre Nachricht wurde erfolgreich gesendet!',
+      sendError: 'Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+      customerNotFound: 'Kundeninformationen nicht gefunden. Bitte melden Sie sich erneut an.',
     },
     common: {
       selectLanguage: 'Sprache auswählen',

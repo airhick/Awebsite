@@ -59,11 +59,14 @@ export async function createCustomer(data: {
       .from('customers')
       .select('*')
       .eq('email', data.email)
-      .single()
+      .maybeSingle()
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
+    if (fetchError) {
       // PGRST116 is "not found" error, which is expected for new customers
-      throw fetchError
+      // Only throw if it's a different error
+      if (fetchError.code !== 'PGRST116') {
+        throw fetchError
+      }
     }
 
     if (existing) {
@@ -85,18 +88,25 @@ export async function createCustomer(data: {
       return updated
     } else {
       // Create new customer
+      const insertData: any = {
+        email: data.email,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        phone: data.phone,
+        title: data.title,
+      }
+
+      // Only include company_id if it exists in the database schema
       const defaultCompanyId = import.meta.env.VITE_SUPABASE_DEFAULT_COMPANY_ID
+      if (defaultCompanyId) {
+        // Check if company_id column exists by trying a test query first
+        // For now, we'll skip it since the error indicates it doesn't exist
+        // insertData.company_id = defaultCompanyId
+      }
 
       const { data: created, error: insertError } = await supabase
         .from('customers')
-        .insert({
-          email: data.email,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-          title: data.title,
-          company_id: defaultCompanyId,
-        })
+        .insert(insertData)
         .select()
         .single()
 

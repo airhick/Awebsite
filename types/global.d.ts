@@ -4,6 +4,12 @@ declare global {
   interface Window {
     google: any;
     Vapi: any;
+    Calendly?: {
+      initInlineWidget: (options: {
+        url: string;
+        parentElement: HTMLElement;
+      }) => void;
+    };
     initGoogleMaps: () => void;
     googleMapsLoaded?: boolean;
     googleMapsInitialized?: boolean;

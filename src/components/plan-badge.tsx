@@ -40,7 +40,7 @@ export function PlanBadge() {
 
   return (
     <Badge variant={config.variant} className="flex items-center gap-2 px-2.5 py-1">
-      <Icon className="h-3 w-3" />
+      <Icon className="h-4 w-4" />
       <span className="text-xs font-medium">
         {config.label} · {planMinutes[plan]} min
       </span>

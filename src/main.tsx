@@ -50,23 +50,26 @@ const queryClient = new QueryClient({
   },
   queryCache: new QueryCache({
     onError: (error) => {
+      // Only handle Axios errors from React Query, not Supabase errors
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
           toast.error('Session expired!')
           useAuthStore.getState().auth.reset()
-          router.navigate({ to: '/' })
+          router.navigate({ to: '/login' })
         }
+        // Only show 500 error toast for critical errors, not for non-critical components
+        // Don't navigate to error page for 500s - let components handle their own errors
         if (error.response?.status === 500) {
-          toast.error('Internal Server Error!')
-          // Only navigate to error page in production to avoid disrupting HMR in development
-          if (import.meta.env.PROD) {
-            router.navigate({ to: '/500' })
-          }
+          // Only show toast, don't navigate - components should handle their own errors gracefully
+          console.warn('500 error caught by QueryCache (may be non-critical):', error)
+          // Don't show toast for every 500 - many are handled gracefully by components
+          // toast.error('Internal Server Error!')
         }
         if (error.response?.status === 403) {
           // router.navigate("/forbidden", { replace: true });
         }
       }
+      // Ignore non-Axios errors (like Supabase errors) - they should be handled by components
     },
   }),
 })
@@ -96,7 +99,7 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="light">
           <FontProvider>
             <DirectionProvider>
               <RouterProvider router={router} />

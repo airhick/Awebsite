@@ -33,7 +33,7 @@ export const sidebarData: SidebarData = {
   ],
   navGroups: [
     {
-      title: 'General',
+      title: '',
       items: [
         {
           title: 'Dashboard',
@@ -54,7 +54,7 @@ export const sidebarData: SidebarData = {
       ],
     },
     {
-      title: 'Other',
+      title: '',
       items: [
         {
           title: 'Help Center',

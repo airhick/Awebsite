@@ -48,6 +48,37 @@ export function setVAPIApiKey(apiKey: string): void {
 }
 
 /**
+ * Get VAPI Public API key for Web SDK
+ * Priority:
+ * 1. Environment variable (VITE_VAPI_PUBLIC_API_KEY)
+ * 2. localStorage (vapi_public_key)
+ * 3. Fallback to default public key
+ */
+export function getVAPIPublicApiKey(): string | null {
+  // First, try environment variable
+  const envKey = import.meta.env.VITE_VAPI_PUBLIC_API_KEY
+  if (envKey) {
+    return envKey
+  }
+
+  // Fallback to localStorage
+  const localKey = localStorage.getItem('vapi_public_key')
+  if (localKey) {
+    return localKey
+  }
+
+  // Default public API key (from user's provided keys)
+  const defaultPublicKey = 'fc7a13ad-f97a-48eb-a0a2-8abfbd90e449'
+  
+  // Store it in localStorage for future use
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('vapi_public_key', defaultPublicKey)
+  }
+  
+  return defaultPublicKey
+}
+
+/**
  * Get customer ID from auth state or localStorage
  */
 export function getCustomerId(): number | null {
@@ -80,5 +111,37 @@ export function getCustomerId(): number | null {
   }
   
   return null
+}
+
+/**
+ * Get customer data (id, email, company) from localStorage or auth store
+ */
+export function getCustomerData(): { id: number | null; email: string | null; company: string | null } {
+  // Try localStorage first (matches custom auth flow)
+  const customerData = localStorage.getItem('aurora_customer')
+  if (customerData) {
+    try {
+      const customer = JSON.parse(customerData)
+      return {
+        id: typeof customer.id === 'string' ? parseInt(customer.id, 10) : customer.id,
+        email: customer.email || null,
+        company: customer.company || null
+      }
+    } catch (error) {
+      console.error('[getCustomerData] Failed to parse customer data:', error)
+    }
+  }
+  
+  // Fallback to auth store
+  const user = useAuthStore.getState().auth.user
+  if (user) {
+    return {
+      id: user.id ? (typeof user.id === 'string' ? parseInt(user.id, 10) : user.id) : null,
+      email: user.email || null,
+      company: (user.user_metadata as any)?.company || null
+    }
+  }
+  
+  return { id: null, email: null, company: null }
 }
 

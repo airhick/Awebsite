@@ -9,11 +9,11 @@ import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { LanguageSelector } from '@/components/language-selector'
 import { WebhookSidebar } from '@/components/webhook-sidebar'
 import { PlanBadge } from '@/components/plan-badge'
+import { CallManagerButton } from '@/components/call-manager-button'
 import { StatsCards } from './components/stats-cards'
 import { BusinessSetup } from './components/business-setup'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,14 +21,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load heavy components to improve initial page load
 const CallDetails = lazy(() => import('./components/call-details').then(m => ({ default: m.CallDetails })))
+const CallTimelineGraph = lazy(() => import('./components/call-timeline-graph').then(m => ({ default: m.CallTimelineGraph })))
 
 export function AuroraDashboard() {
   const { user, loading } = useAuthStore((state) => state.auth)
   const t = useTranslation()
   const [needsSetup, setNeedsSetup] = useState(false)
-  const currentNotification = useWebhookNotificationsStore((state) => state.currentNotification)
+  const notifications = useWebhookNotificationsStore((state) => state.notifications)
   const currentCustomerId = getCustomerId()
-  const hasNotification = !!currentNotification && currentNotification.customer_id === currentCustomerId
+  const hasNotification = notifications.some(n => n.customer_id === currentCustomerId)
   
   // Sync user to customers table - Hook handles delay internally
   useCustomerSync()
@@ -81,7 +82,6 @@ export function AuroraDashboard() {
       <Header>
         <TopNav links={topNav} />
         <div className="ms-auto flex items-center space-x-4">
-          <Search />
           <PlanBadge />
           <LanguageSelector />
           <ThemeSwitch />
@@ -104,10 +104,28 @@ export function AuroraDashboard() {
                 {t.dashboard.overview}
               </p>
             </div>
+            <CallManagerButton />
           </div>
 
           {/* Stats Cards */}
           <StatsCards />
+
+          {/* Call Timeline Graph - Lazy loaded */}
+          <Suspense fallback={
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-5 w-48" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[400px] w-full" />
+              </CardContent>
+            </Card>
+          }>
+            <CallTimelineGraph />
+          </Suspense>
 
           {/* VAPI Information Grid - Lazy loaded */}
           <div className="grid gap-6 lg:grid-cols-1">

@@ -14,19 +14,16 @@ export interface CallLog {
   status: string | null
   type: string | null
   started_at: string | null
-  created_at: string | null
   duration: number | null
-  cost: number | null
-  customer_number: string | null
+  ended_at: string | null
   ended_reason: string | null
   summary: string | null
   recording_url: string | null
   transcript: any
   messages: any
   assistant_id: string | null
-  artifact: any
-  synced_at: string
-  created_at_db: string
+  synced_at: string | null
+  created_at_db: string | null
 }
 
 /**
@@ -187,17 +184,14 @@ export async function syncCallLogs(
       status: call.status,
       type: call.type,
       started_at: call.startedAt || call.createdAt || null,
-      created_at: call.createdAt || null,
         duration: calculatedDuration, // Use calculated duration (from VAPI or computed from timestamps)
-      cost: call.cost || null,
-      customer_number: call.customer?.number || null,
+      ended_at: call.endedAt ? String(call.endedAt) : null, // ended_at is TEXT in schema
       ended_reason: call.endedReason || null,
       summary: extractSummary(call),
       recording_url: getRecordingUrl(call),
       transcript: call.transcript || null,
       messages: call.messages || null,
       assistant_id: call.assistantId || null,
-      artifact: call.artifact || null,
       }
     })
     
@@ -270,7 +264,7 @@ async function updateMissingDurations(
       // Get calls from database that have NULL duration
       const { data: callsWithoutDuration, error: fetchError } = await supabase
         .from('call_logs')
-        .select('id, vapi_call_id, started_at, created_at, artifact')
+        .select('id, vapi_call_id, started_at, created_at_db, artifact')
         .eq('customer_id', customerId)
         .is('duration', null)
         .range(offset, offset + batchSize - 1)
@@ -359,7 +353,7 @@ export async function getCallLogs(
       .select('*')
       .eq('customer_id', customerId)
       .order('started_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false })
+      .order('created_at_db', { ascending: false })
       .limit(limit)
     
     if (error) {
@@ -422,10 +416,10 @@ export async function hasNewCalls(
     try {
       const { data: latestDbCall, error } = await supabase
         .from('call_logs')
-        .select('started_at, created_at')
+        .select('started_at, created_at_db')
         .eq('customer_id', customerId)
         .order('started_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
+        .order('created_at_db', { ascending: false })
         .limit(1)
         .single()
       
@@ -444,7 +438,7 @@ export async function hasNewCalls(
       
       // Compare timestamps
       const vapiTime = latestVapiCall.startedAt || latestVapiCall.createdAt || ''
-      const dbTime = latestDbCall.started_at || latestDbCall.created_at || ''
+      const dbTime = latestDbCall.started_at || latestDbCall.created_at_db || ''
       
       return vapiTime > dbTime
     } catch (error: any) {

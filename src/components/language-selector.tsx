@@ -21,9 +21,13 @@ export function LanguageSelector() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          aria-label={t.common.selectLanguage}
+        >
           <Globe className="h-4 w-4" />
-          <span className="sr-only">{t.common.selectLanguage}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

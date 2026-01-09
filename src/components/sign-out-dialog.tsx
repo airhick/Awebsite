@@ -15,7 +15,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     try {
       await auth.signOut()
       navigate({
-        to: '/',
+        to: '/login',
         replace: true,
       })
     } catch (error) {
