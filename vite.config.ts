@@ -19,6 +19,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    outDir: 'docs',
+    emptyOutDir: true,
+  },
   optimizeDeps: {
     include: ['hls.js'],
     exclude: ['motion', 'framer-motion', 'motion-dom'],
