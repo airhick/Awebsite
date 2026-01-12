@@ -38,15 +38,6 @@ jobs:
           VITE_VAPI_API_KEY: ${{ secrets.VITE_VAPI_API_KEY }}
           VITE_SUPABASE_EDGE_FUNCTION_NAME: ${{ secrets.VITE_SUPABASE_EDGE_FUNCTION_NAME }}
 
-      - name: Copy CNAME to docs folder
-        run: |
-          if [ -f CNAME ]; then
-            cp CNAME docs/CNAME
-            echo "CNAME file copied to docs folder"
-          else
-            echo "CNAME file not found, skipping"
-          fi
-
       - name: Commit and push docs folder
         run: |
           git config --local user.email "action@github.com"
