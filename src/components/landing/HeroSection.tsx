@@ -15,7 +15,7 @@ const HeroSection = () => {
     if (!video) return;
 
     // Use local MP4 video
-    video.src = "/videos/Create_on_a_1080p_202601060027.mp4";
+    video.src = "/videos/0112.mp4";
   }, []);
 
   return (
@@ -25,6 +25,7 @@ const HeroSection = () => {
         <video
           ref={videoRef}
           className="w-full h-full object-cover"
+          style={{ opacity: 0.5 }}
           autoPlay
           muted
           loop
