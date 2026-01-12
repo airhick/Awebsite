@@ -8,7 +8,7 @@ const TestimonialSection = () => {
       company: "EnterpriseCorp",
       content: "The Text-to-Speech API integration was seamless. We've implemented voice AI across our customer service platform, delivering natural, clear voice interactions that our customers love.",
       rating: 5,
-      image: "/lovable-uploads/f205f4a0-427d-4991-8617-497b883351fe.png"
+      image: `${import.meta.env.BASE_URL}lovable-uploads/f205f4a0-427d-4991-8617-497b883351fe.png`
     },
     {
       name: "Michael Chen",
@@ -16,7 +16,7 @@ const TestimonialSection = () => {
       company: "GlobalTech",
       content: "Our Speech-to-Speech API implementation transformed our call center operations. The high-quality voice recognition and synthesis capabilities reduced costs while improving customer satisfaction.",
       rating: 5,
-      image: "/lovable-uploads/829efb0e-d3ef-44df-b375-e2f710dfb0bc.png"
+      image: `${import.meta.env.BASE_URL}lovable-uploads/829efb0e-d3ef-44df-b375-e2f710dfb0bc.png`
     },
     {
       name: "Emily Rodriguez",
@@ -24,7 +24,7 @@ const TestimonialSection = () => {
       company: "ServiceTech",
       content: "Implementing enterprise AI solutions with these APIs was straightforward. The clear documentation and robust APIs enabled us to deploy voice AI capabilities across multiple departments in weeks.",
       rating: 5,
-      image: "/lovable-uploads/f4b94bd5-9414-4b09-b564-c52434a0c77b.png"
+      image: `${import.meta.env.BASE_URL}lovable-uploads/f4b94bd5-9414-4b09-b564-c52434a0c77b.png`
     }
   ];
 

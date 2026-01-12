@@ -36,7 +36,7 @@ const FeatureSection3 = () => {
                 <div className="relative w-full aspect-square overflow-hidden rounded-[30px]">
                   {/* Background Image */}
                   <img 
-                    src="/images/Group 4.png" 
+                    src={`${import.meta.env.BASE_URL}images/Group 4.png`}
                     alt="Dashboard preview"
                     className="w-full h-full object-cover"
                   />
@@ -71,7 +71,7 @@ const FeatureSection3 = () => {
             <div className="relative w-full aspect-square lg:h-[577px] lg:aspect-auto overflow-hidden rounded-[30px]">
               {/* Background Image */}
               <img 
-                src="/images/Group 4.png" 
+                src={`${import.meta.env.BASE_URL}images/Group 4.png`}
                 alt="Dashboard preview"
                 className="w-full h-full object-cover"
               />

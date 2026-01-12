@@ -14,8 +14,8 @@ const HeroSection = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Use local MP4 video
-    video.src = "/videos/0112.mp4";
+    // Use local MP4 video with base path
+    video.src = `${import.meta.env.BASE_URL}videos/0112.mp4`;
   }, []);
 
   return (
@@ -118,7 +118,7 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 1.2 }}
         >
           <img
-            src="/images/dashboardsnippet.png"
+            src={`${import.meta.env.BASE_URL}images/dashboardsnippet.png`}
             alt="Dashboard preview"
             className="w-full h-auto rounded-2xl shadow-2xl"
           />
