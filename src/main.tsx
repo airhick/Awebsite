@@ -75,12 +75,15 @@ const queryClient = new QueryClient({
 })
 
 // Create a new router instance
+// Ensure basepath is set correctly for GitHub Pages
+// BASE_URL from Vite includes trailing slash (e.g., '/Awebsite/')
+// TanStack Router basepath should match this exactly
 const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
-  basepath: import.meta.env.BASE_URL,
+  basepath: import.meta.env.BASE_URL || '/',
 })
 
 // Register the router instance for type safety
