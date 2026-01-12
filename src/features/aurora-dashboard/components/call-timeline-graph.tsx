@@ -668,7 +668,6 @@ export function CallTimelineGraph() {
                     </g>
                   )
                 }}
-                name="Call Success Rate"
                 connectNulls={false}
               />
             </ComposedChart>
