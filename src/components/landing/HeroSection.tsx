@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import BlurText from "@/components/landing/animations/BlurText";
 import { motion } from "motion/react";
 import ParticlesBackground from "@/components/landing/ParticlesBackground";
-import { useAuthStore } from "@/stores/auth-store";
 import { useTheme } from "@/context/theme-provider";
 
 const HeroSection = () => {
