@@ -5,8 +5,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/Awebsite/',
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/Awebsite/' : '/',
   plugins: [
     tanstackRouter({
       target: 'react',
@@ -31,4 +31,4 @@ export default defineConfig({
   ssr: {
     noExternal: ['motion', 'framer-motion', 'motion-dom'],
   },
-})
+}))
