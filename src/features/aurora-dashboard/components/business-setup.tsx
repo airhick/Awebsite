@@ -102,7 +102,7 @@ export function BusinessSetup({ onComplete }: BusinessSetupProps) {
         <CardHeader>
           <div className="flex justify-center mb-4">
             <img 
-              src="/logos/aurora-logo.png" 
+              src={`${import.meta.env.BASE_URL}logos/aurora-logo.png`}
               alt="Aurora Logo" 
               className="h-16 w-16 object-contain"
             />

@@ -17,7 +17,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="logo" style={{ fontSize: 0, lineHeight: 0 }}>
           <img 
-            src="/logos/aurora-logo.png" 
+            src={`${import.meta.env.BASE_URL}logos/aurora-logo.png`}
             alt="Aurora Logo" 
             className="h-7 object-contain"
             style={{ width: 'auto', display: 'block' }}

@@ -30,7 +30,7 @@ const Navbar = () => {
           <div className="backdrop-blur-[10px] rounded-full p-2">
             <Link to="/" className="block h-6">
               <img
-                src="/logos/aurora-logo.png"
+                src={`${import.meta.env.BASE_URL}logos/aurora-logo.png`}
                 alt="Aurora Logo"
                 className="h-6 w-auto dark:brightness-0 dark:invert"
               />
